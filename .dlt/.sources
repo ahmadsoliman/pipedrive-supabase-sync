@@ -1,0 +1,36 @@
+engine_version: 1
+sources:
+  pipedrive:
+    is_dirty: false
+    last_commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+    last_commit_timestamp: '2025-08-22T12:09:35+02:00'
+    files:
+      pipedrive/__init__.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: b7964731c10eeed3c094b5c098544efc1cf52753
+        sha3_256: 8e8af0e2f53b6c174cc82d760fbcf7750f76a99c314daa7bd8441509da38ca9c
+      pipedrive/README.md:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: 866cfa475c5559196841b100e89938963694f5c4
+        sha3_256: be6a3d3f26e43503b62dea31d2c39bee80f25567f813701f7d6388264eb5902b
+      pipedrive/settings.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: 86c43bce5236e0df5965b698c25958c73eeebea3
+        sha3_256: 5d09ce4e3ea480aa7e69dcf9618b43ca610e6e6918d6f9bb0def6a5c179c15ca
+      pipedrive/typing.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: 54d18332f4982373285a4bdd81d2bf67e5711bb2
+        sha3_256: 65d6829929232ef22a0be97e02eaf689b5302790523e9a93212fcfb63139ea6a
+      pipedrive/helpers/__init__.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: f5af5028804f018311504846d5dd618f3838dcb0
+        sha3_256: d62599663638635bdb886c577e40a19745fb3f2a4c7cbe4218ce2c5ecedd0d4d
+      pipedrive/helpers/pages.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: 1fa82be52bfff569308412a3f1df3aa91243f4b8
+        sha3_256: 2c242f7c7993e2f77ba4517f1c2db5627ae60525435ee1f7e9ca1df732225fbb
+      pipedrive/helpers/custom_fields_munger.py:
+        commit_sha: 1f1cda2dd38a1bf9c5ffc971e98b5f36c6b81852
+        git_sha: b65a4e30ecd04be6cf0c369dd5ece5c8647fbec8
+        sha3_256: 77bf0ed1cab7fb262c90883f35150e0b688338639897db33ced7931e795f1131
+    dlt_version_constraint: '>=1.0.0'
