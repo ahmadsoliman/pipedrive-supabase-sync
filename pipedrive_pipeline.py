@@ -22,12 +22,16 @@ def load_selected_data() -> None:
     # Note: `custom_fields_mapping` must be included to translate custom field hashes to corresponding names
     load_info = pipeline.run(
         pipedrive_source().with_resources(
-            "products", "deals", "deals_participants", "custom_fields_mapping"
+            "deals", "deals_participants", "custom_fields_mapping",
+            "persons", "organizations", "leads", "notes", "users"
         )
     )
     print(load_info)
     # just to show how to access resources within source
-    pipedrive_data = pipedrive_source()
+    pipedrive_data = pipedrive_source().with_resources(
+            "deals", "deals_participants", "custom_fields_mapping",
+            "persons", "organizations", "leads", "notes", "users"
+        )
     # print source info
     print(pipedrive_data)
     print()
@@ -63,8 +67,8 @@ def load_from_start_date() -> None:
 
 if __name__ == "__main__":
     # run our main example
-    load_pipedrive()
+    # load_pipedrive()
     # load selected tables and display resource info
-    # load_selected_data()
+    load_selected_data()
     # load activities updated since given date
     # load_from_start_date()

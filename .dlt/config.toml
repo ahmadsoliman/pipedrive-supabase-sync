@@ -1,5 +1,9 @@
 # put your configuration values here
 
+[destination]
+# Set the optimized replace strategy
+replace_strategy = "staging-optimized"
+
 [runtime]
 log_level="WARNING"  # the system log level of dlt
 # use the dlthub_telemetry setting to enable/disable anonymous usage data reporting, see https://dlthub.com/docs/reference/telemetry
