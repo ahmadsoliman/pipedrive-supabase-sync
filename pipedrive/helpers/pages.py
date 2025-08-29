@@ -30,11 +30,11 @@ def get_pages(
     Returns:
 
     """
-    headers = {"Content-Type": "application/json"}
-    params = {"api_token": pipedrive_api_key}
+    headers = {"Content-Type": "application/json", "x-api-token": pipedrive_api_key}
+    params = {}
     if extra_params:
         params.update(extra_params)
-    url = f"https://app.pipedrive.com/v1/{entity}"
+    url = f"https://api.pipedrive.com/v1/{entity}"
     yield from _paginated_get(url, headers=headers, params=params)
 
 
@@ -84,7 +84,7 @@ def _extract_recents_data(data: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]
     return [
         data_item
         for data_item in chain.from_iterable(
-            (_list_wrapped(item["data"]) for item in data)
+            (_list_wrapped(item) for item in data)
         )
         if data_item is not None
     ]
@@ -103,13 +103,18 @@ def _get_recent_pages(
         dlt.current.source_state().get("custom_fields_mapping", {}).get(entity, {})
     )
     pages = get_pages(
-        "recents",
+        entity,
         pipedrive_api_key,
-        extra_params=dict(since_timestamp=since_timestamp, items=entity),
+        extra_params=dict(since_timestamp=since_timestamp), # CHANGED: , items=entity
     )
     pages = (_extract_recents_data(page) for page in pages)
+
+    p = 0
     for page in pages:
+        p += 1
         yield rename_fields(page, custom_fields_mapping)
+
+    print("entity: ", entity, "pages count: ", p)
 
 
 __source_name__ = "pipedrive"
