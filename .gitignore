@@ -8,3 +8,5 @@ secrets.toml
 # ignore duckdb
 *.duckdb
 *.wal
+.dlt/secrets.mine.toml
+.dlt/secrets.production.toml

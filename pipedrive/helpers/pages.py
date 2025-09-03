@@ -40,13 +40,14 @@ def get_pages(
 
 def get_recent_items_incremental(
     entity: str,
+    resource_name: str,
     pipedrive_api_key: str,
     since_timestamp: dlt.sources.incremental[str] = dlt.sources.incremental(
         "update_time|modified", "1970-01-01 00:00:00"
     ),
 ) -> Iterator[TDataPage]:
     """Get a specific entity type from /recents with incremental state."""
-    yield from _get_recent_pages(entity, pipedrive_api_key, since_timestamp.last_value)
+    yield from _get_recent_pages(entity, resource_name, pipedrive_api_key, since_timestamp.last_value)
 
 
 def _paginated_get(
@@ -97,24 +98,25 @@ def _list_wrapped(item: Union[List[T], T]) -> List[T]:
 
 
 def _get_recent_pages(
-    entity: str, pipedrive_api_key: str, since_timestamp: str
+    entity: str, resource_name: str, pipedrive_api_key: str, since_timestamp: str
 ) -> Iterator[TDataPage]:
     custom_fields_mapping = (
         dlt.current.source_state().get("custom_fields_mapping", {}).get(entity, {})
     )
+    # print(entity, custom_fields_mapping)
     pages = get_pages(
-        entity,
+        resource_name,
         pipedrive_api_key,
         extra_params=dict(since_timestamp=since_timestamp), # CHANGED: , items=entity
     )
     pages = (_extract_recents_data(page) for page in pages)
 
-    p = 0
+    pages_count = 0
     for page in pages:
-        p += 1
+        pages_count += 1
         yield rename_fields(page, custom_fields_mapping)
 
-    print("entity: ", entity, "pages count: ", p)
+    print("entity: ", resource_name, "pages count: ", pages_count)
 
 
 __source_name__ = "pipedrive"

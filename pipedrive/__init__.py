@@ -80,18 +80,18 @@ def pipedrive_source(
             get_recent_items_incremental,
             name=resource_name,
             primary_key="id",
-            write_disposition="merge",
-        )(resource_name, pipedrive_api_key, **resource_kwargs)
+            write_disposition="replace",
+        )(entity, resource_name, pipedrive_api_key, **resource_kwargs)
 
     yield from endpoints_resources.values()
 
     # create transformers for deals to participants and flows
     yield endpoints_resources["deals"] | dlt.transformer(
-        name="deals_participants", write_disposition="merge", primary_key="id"
+        name="deals_participants", write_disposition="replace", primary_key="id"
     )(_get_deals_participants)(pipedrive_api_key)
 
     yield endpoints_resources["deals"] | dlt.transformer(
-        name="deals_flow", write_disposition="merge", primary_key="id"
+        name="deals_flow", write_disposition="replace", primary_key="id"
     )(_get_deals_flow)(pipedrive_api_key)
 
     # if simple value is passed in place of incremental, it will be used as initial value
@@ -174,7 +174,7 @@ def parsed_mapping(
         ]
 
 
-@dlt.resource(primary_key="id", write_disposition="merge")
+@dlt.resource(primary_key="id", write_disposition="replace")
 def leads(
     pipedrive_api_key: str = dlt.secrets.value,
     update_time: dlt.sources.incremental[str] = dlt.sources.incremental(

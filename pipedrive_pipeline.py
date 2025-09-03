@@ -22,27 +22,27 @@ def load_selected_data() -> None:
     # Note: `custom_fields_mapping` must be included to translate custom field hashes to corresponding names
     load_info = pipeline.run(
         pipedrive_source().with_resources(
-            "custom_fields_mapping", "deals", "deals_participants",
-            "persons", "organizations", "leads", "notes", "users"
+            "deals", "deals_participants",
+            "persons", "organizations", "leads", "notes", "users", "custom_fields_mapping"
         )
     )
-    print(load_info)
-    # just to show how to access resources within source
-    pipedrive_data = pipedrive_source().with_resources(
-            "deals", "deals_participants", "custom_fields_mapping",
-            "persons", "organizations", "leads", "notes", "users"
-        )
-    # print source info
-    print(pipedrive_data)
-    print()
-    # list resource names
-    print(pipedrive_data.resources.keys())
-    print()
-    # print `persons` resource info
-    print(pipedrive_data.resources["persons"])
-    print()
-    # alternatively
-    print(pipedrive_data.persons)
+    # print(load_info)
+    # # just to show how to access resources within source
+    # pipedrive_data = pipedrive_source().with_resources(
+    #         "deals", "deals_participants",
+    #         "persons", "organizations", "leads", "notes", "users", "custom_fields_mapping"
+    #     )
+    # # print source info
+    # print(pipedrive_data)
+    # print()
+    # # list resource names
+    # print(pipedrive_data.resources.keys())
+    # print()
+    # # print `persons` resource info
+    # print(pipedrive_data.resources["persons"])
+    # print()
+    # # alternatively
+    # print(pipedrive_data.persons)
 
 
 def load_from_start_date() -> None:
