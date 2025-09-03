@@ -1,7 +1,7 @@
 name: Run pipedrive pipeline from pipedrive_pipeline.py
 'on':
   schedule:
-  - cron: '0 */3 * * *'
+  - cron: '0 */1 * * *'
   workflow_dispatch: null
 env:
   DESTINATION__POSTGRES__CREDENTIALS__DATABASE: postgres
