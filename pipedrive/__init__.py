@@ -86,9 +86,9 @@ def pipedrive_source(
     yield from endpoints_resources.values()
 
     # create transformers for deals to participants and flows
-    yield endpoints_resources["deals"] | dlt.transformer(
-        name="deals_participants", write_disposition="merge", primary_key="id"
-    )(_get_deals_participants)(pipedrive_api_key)
+    # yield endpoints_resources["deals"] | dlt.transformer(
+    #     name="deals_participants", write_disposition="merge", primary_key="id"
+    # )(_get_deals_participants)(pipedrive_api_key)
 
     yield endpoints_resources["deals"] | dlt.transformer(
         name="deals_flow", write_disposition="merge", primary_key="id"
@@ -112,12 +112,12 @@ def _get_deals_flow(
             )
 
 
-def _get_deals_participants(
-    deals_page: TDataPage, pipedrive_api_key: str
-) -> Iterator[TDataPage]:
-    for row in deals_page:
-        url = f"deals/{row['id']}/participants"
-        yield from get_pages(url, pipedrive_api_key)
+# def _get_deals_participants(
+#     deals_page: TDataPage, pipedrive_api_key: str
+# ) -> Iterator[TDataPage]:
+#     for row in deals_page:
+#         url = f"deals/{row['id']}/participants"
+#         yield from get_pages(url, pipedrive_api_key)
 
 
 @dlt.resource(selected=False)
