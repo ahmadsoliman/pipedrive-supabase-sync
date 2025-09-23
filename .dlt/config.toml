@@ -2,7 +2,7 @@
 
 [destination]
 # Set the optimized replace strategy
-replace_strategy = "staging-optimized"
+replace_strategy = "truncate-and-insert"
 
 [runtime]
 log_level="WARNING"  # the system log level of dlt

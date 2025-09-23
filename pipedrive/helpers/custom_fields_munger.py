@@ -80,6 +80,46 @@ def _normalized_name(name: str) -> str:
     normalized_name = name.strip()  # remove leading and trailing spaces
     return source_schema.naming.normalize_identifier(normalized_name)
 
+def _coerce_to_list(value):
+    """
+    Normalize the value for 'set' fields into a list of option ids (as strings or numbers).
+    Accepts:
+      - list/tuple -> returns same (converted to list)
+      - int -> [int]
+      - str -> if contains commas, split on commas; otherwise treat as single id string
+      - None/"" -> []
+    """
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if isinstance(value, int):
+        return [value]
+    if isinstance(value, str):
+        v = value.strip()
+        if v == "":
+            return []
+        # split by comma if present (common case: "1,2,3")
+        if "," in v:
+            parts = [p.strip() for p in v.split(",") if p.strip() != ""]
+            return parts
+        # If string looks like a JSON array (e.g. '["1","2"]'), try to parse it
+        if v.startswith("[") and v.endswith("]"):
+            try:
+                import json
+                parsed = json.loads(v)
+                if isinstance(parsed, (list, tuple)):
+                    return list(parsed)
+            except Exception:
+                pass
+        # fallback: single id represented as string
+        return [v]
+    # fallback: anything iterable -> try converting (but avoid iterating over str because already handled)
+    try:
+        return list(value)
+    except Exception:
+        return [value]
+
 
 def rename_fields(data: TDataPage, fields_mapping: Dict[str, Any]) -> TDataPage:
     if not fields_mapping:
@@ -90,13 +130,32 @@ def rename_fields(data: TDataPage, fields_mapping: Dict[str, Any]) -> TDataPage:
                 continue
             field_value = data_item.pop(hash_string)
             field_name = field["name"]
-            options_map = field["options"]
-            # Get label instead of ID for 'enum' and 'set' fields
-            if field_value and field["field_type"] == "set":  # Multiple choice
-                field_value = [
-                    options_map.get(str(enum_id), enum_id) for enum_id in field_value
-                ]
+            options_map = field.get("options") or {}
+
+            # MULTI-CHOICE ("set") — coerce to list then map using options_map
+            if field_value and field["field_type"] == "set":
+                coerced = _coerce_to_list(field_value)
+                # map each element using the options_map (keys in state are strings)
+                mapped = []
+                for enum_id in coerced:
+                    # try both str and int keys (options_map keys are strings, but id might be int)
+                    mapped_label = options_map.get(str(enum_id))
+                    if mapped_label is None and isinstance(enum_id, str) and enum_id.isdigit():
+                        # try integer form
+                        mapped_label = options_map.get(enum_id)
+                    mapped.append(mapped_label if mapped_label is not None else enum_id)
+                field_value = mapped
+
+            # SINGLE-CHOICE ("enum") — accept string/int or single-element list
             elif field_value and field["field_type"] == "enum":
-                field_value = options_map.get(str(field_value), field_value)
+                # sometimes enum may come as a list with one item — normalize that
+                if isinstance(field_value, (list, tuple)) and len(field_value) == 1:
+                    fv = field_value[0]
+                else:
+                    fv = field_value
+                # use mapping if available
+                field_value = options_map.get(str(fv), fv)
+
+            # else: other field types left as-is
             data_item[field_name] = field_value
     return data

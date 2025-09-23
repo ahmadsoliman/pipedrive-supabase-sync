@@ -64,11 +64,21 @@ def load_from_start_date() -> None:
     load_info = pipeline.run([source, activities_source])
     print(load_info)
 
+def add_supabase_triggers() -> None:
+    # Execute SQL in supabase to add triggers to keep tables in sync
+    print("Adding Supabase triggers to keep tables in sync...")
+    import supabase  # type: ignore
+    supabase.add_triggers()
+    print("Supabase pipedrive triggers added.")
+
 
 if __name__ == "__main__":
     # run our main example
     # load_pipedrive()
     # load selected tables and display resource info
+
     load_selected_data()
+    add_supabase_triggers()
+    
     # load activities updated since given date
     # load_from_start_date()
