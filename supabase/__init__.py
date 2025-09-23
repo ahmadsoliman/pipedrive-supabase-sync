@@ -111,7 +111,11 @@ def add_deals_triggers(connection, cursor):
         after insert or update on pipedrive_data.deals
         for each row
         execute function trigger_sync_deal();
-                  
+    """)
+    connection.commit()
+    print("Deals triggers added successfully.")
+
+    cursor.execute("""
         drop trigger if exists trg_sync_deal_asset_type on pipedrive_data.deals__asset_type;
         create trigger trg_sync_deal_asset_type
         after insert or update or delete on pipedrive_data.deals__asset_type
@@ -124,4 +128,13 @@ def add_deals_triggers(connection, cursor):
     """)
 
     connection.commit()
-    print("Deals triggers added successfully.")
+
+    # touch all rows in deals__asset_type and deals__financing_type to fire the triggers and sync data
+    cursor.execute("""
+        update pipedrive_data.deals__asset_type set _dlt_id = _dlt_id;
+        update pipedrive_data.deals__financing_type set _dlt_id = _dlt_id;
+    """)
+
+    connection.commit()
+
+    print("Deals asset_type & financing_type triggers added successfully.")
