@@ -2,6 +2,8 @@
 secrets.toml
 # ignore basic python artifacts
 .env
+.venv/
+.prodenv/
 **/__pycache__/
 **/*.py[cod]
 **/*$py.class
@@ -10,4 +12,3 @@ secrets.toml
 *.wal
 .dlt/secrets.mine.toml
 .dlt/secrets.production.toml
-.env/
