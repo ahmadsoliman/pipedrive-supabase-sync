@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # load selected tables and display resource info
 
     load_selected_data()
-    add_supabase_triggers()
+    # add_supabase_triggers()
     
     # load activities updated since given date
     # load_from_start_date()
