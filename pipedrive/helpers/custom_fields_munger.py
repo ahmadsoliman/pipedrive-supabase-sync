@@ -60,18 +60,30 @@ def _update_field(
         )
         return existing_fields_mapping
     existing_options = existing_field.get("options", {})
-    if not existing_options or existing_options == new_options_map:
-        existing_field["options"] = new_options_map
-        existing_field["field_type"] = data_item[
-            "field_type"
-        ]  # Add for backwards compat
-        return existing_fields_mapping
-    # Add new enum options to the existing options array
-    # so that when option is renamed the original label remains valid
-    new_option_keys = set(new_options_map) - set(existing_options)
-    for key in new_option_keys:
-        existing_options[key] = new_options_map[key]
-    existing_field["options"] = existing_options
+
+    # Sync renamed fields
+    new_name = data_item["name"]
+    if existing_field["name"] != new_name:
+        existing_field["name"] = new_name
+        existing_field["normalized_name"] = _normalized_name(new_name)
+
+    # Keep field type in sync even if options did not change
+    existing_field["field_type"] = data_item["field_type"]
+
+    # Refresh options to reflect current Pipedrive configuration
+    synced_options = dict(existing_options)
+
+    # Remove options that no longer exist upstream
+    for option_id in list(synced_options.keys()):
+        if option_id not in new_options_map:
+            synced_options.pop(option_id)
+
+    # Add or update options coming from the latest payload
+    for option_id, option_label in new_options_map.items():
+        if synced_options.get(option_id) != option_label:
+            synced_options[option_id] = option_label
+
+    existing_field["options"] = synced_options
     return existing_fields_mapping
 
 
