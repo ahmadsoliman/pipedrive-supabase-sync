@@ -138,3 +138,222 @@ def add_deals_triggers(connection, cursor):
     connection.commit()
 
     print("Deals asset_type & financing_type triggers added successfully.")
+
+
+
+# NEW Trigger functions to keep Supabase tables in sync with Pipedrive data
+def add_all_new_trigger_functions(connection, cursor):
+    print("Adding all new triggers to keep Supabase tables in sync with Pipedrive data.")
+
+    cursor.execute("""
+        -- 1) Harden SECURITY DEFINER functions with explicit search_path and qualify names
+        -- trigger_sync_deal (public)
+        create or replace function public.trigger_sync_deal()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        -- Only run when meaningful columns change on UPDATE
+        if tg_op = 'INSERT' or tg_op = 'UPDATE' then
+            perform public.sync_deal_from_pipedrive(new.id);
+            -- Also refresh asset types here (merging trg_sync_deal_asset_type_parent)
+            perform public.sync_deal_asset_type(new.id);
+        end if;
+        return new;
+        end;
+        $$;
+
+        -- trigger_sync_deal_asset_type (public)
+        create or replace function public.trigger_sync_deal_asset_type()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        declare
+        v_parent_id text;
+        v_deal_id bigint;
+        begin
+        if tg_op = 'DELETE' then
+            v_parent_id := old._dlt_parent_id;
+        else
+            v_parent_id := new._dlt_parent_id;
+        end if;
+
+        select d.id into v_deal_id
+        from pipedrive_data.deals d
+        where d._dlt_id = v_parent_id;
+
+        if v_deal_id is null then
+            return coalesce(new, old);
+        end if;
+
+        perform public.map_all_deal_asset_types_for_deal(v_deal_id);
+        perform public.sync_deal_asset_type(v_deal_id);
+
+        return coalesce(new, old);
+        end;
+        $$;
+
+        -- trigger_sync_deal_financing_type (public)
+        create or replace function public.trigger_sync_deal_financing_type()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        declare
+        v_deal_id bigint;
+        begin
+        if tg_op = 'DELETE' then
+            select id into v_deal_id from pipedrive_data.deals where _dlt_id = old._dlt_parent_id;
+        else
+            select id into v_deal_id from pipedrive_data.deals where _dlt_id = new._dlt_parent_id;
+        end if;
+
+        if v_deal_id is not null then
+            perform public.sync_deal_financing_type(v_deal_id);
+        end if;
+        return coalesce(new, old);
+        end;
+        $$;
+
+        -- sync_organization_insert (public)
+        create or replace function public.sync_organization_insert()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        insert into public.organizations (pipedrive_id, name, hq_location)
+        values (new.id, new.name, new.address)
+        on conflict (pipedrive_id) do update
+            set name = excluded.name,
+                hq_location = excluded.hq_location;
+        return new;
+        end;
+        $$;
+
+        -- sync_organization_update (public) with change guard
+        create or replace function public.sync_organization_update()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        if (new.name is distinct from old.name)
+            or (new.address is distinct from old.address) then
+            update public.organizations
+            set name = new.name,
+                hq_location = new.address
+            where pipedrive_id = new.id;
+        end if;
+        return new;
+        end;
+        $$;
+
+        -- sync_contact_insert (public)
+        create or replace function public.sync_contact_insert()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        insert into public.contacts (pipedrive_id, name, title, location, linkedin, email, organization_id)
+        values (
+            new.id,
+            new.name,
+            new.job_title,
+            new.person_address,
+            new.linked_in,
+            new.primary_email,
+            (select id from public.organizations where pipedrive_id = new.org_id__value)
+        )
+        on conflict (pipedrive_id) do update
+            set name = excluded.name,
+                title = excluded.title,
+                location = excluded.location,
+                linkedin = excluded.linkedin,
+                email = excluded.email,
+                organization_id = excluded.organization_id;
+        return new;
+        end;
+        $$;
+
+        -- sync_contact_update (public) with change guards
+        create or replace function public.sync_contact_update()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        if (new.name is distinct from old.name)
+            or (new.job_title is distinct from old.job_title)
+            or (new.person_address is distinct from old.person_address)
+            or (new.linked_in is distinct from old.linked_in)
+            or (new.primary_email is distinct from old.primary_email)
+            or (new.org_id__value is distinct from old.org_id__value) then
+            update public.contacts
+            set name = new.name,
+                title = new.job_title,
+                location = new.person_address,
+                linkedin = new.linked_in,
+                email = new.primary_email,
+                organization_id = (
+                select id from public.organizations where pipedrive_id = new.org_id__value
+                )
+            where pipedrive_id = new.id;
+        end if;
+        return new;
+        end;
+        $$;
+
+        -- sync_contact_email consolidated (public)
+        create or replace function public.sync_contact_email()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        if (tg_op = 'INSERT' and new.primary is true)
+            or (tg_op = 'UPDATE' and (new.primary is true) and (new.value is distinct from old.value or new.primary is distinct from old.primary)) then
+            update public.contacts c
+            set email = new.value
+            where c.pipedrive_id = (
+            select id from pipedrive_data.persons where _dlt_id = new._dlt_parent_id
+            );
+        end if;
+        return new;
+        end;
+        $$;
+
+        -- sync_contact_phone consolidated (public)
+        create or replace function public.sync_contact_phone()
+        returns trigger
+        language plpgsql
+        security definer
+        set search_path to public, pipedrive_data, extensions
+        as $$
+        begin
+        if (tg_op = 'INSERT' and new.primary is true)
+            or (tg_op = 'UPDATE' and (new.primary is true) and (new.value is distinct from old.value or new.primary is distinct from old.primary)) then
+            update public.contacts c
+            set phone = new.value
+            where c.pipedrive_id = (
+            select id from pipedrive_data.persons where _dlt_id = new._dlt_parent_id
+            );
+        end if;
+        return new;
+        end;
+        $$;
+    """)
+
+    connection.commit()
+    print("All new trigger functions added successfully.")
