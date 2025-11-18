@@ -22,7 +22,7 @@ def load_selected_data() -> None:
     # Note: `custom_fields_mapping` must be included to translate custom field hashes to corresponding names
     load_info = pipeline.run(
         pipedrive_source().with_resources(
-            "deals",
+            "deals", "stages",
             "persons", "organizations", "leads", "notes", "users", "custom_fields_mapping"
         )
     )
